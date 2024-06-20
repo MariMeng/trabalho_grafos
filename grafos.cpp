@@ -116,20 +116,21 @@ Grafo *criarGrafo(int vertices)
 
 void adicionarAresta(Grafo *grafo, int src, int dest)
 {
-    No *novoNo = criarNo(dest);
-    novoNo->prox = grafo->adjLists[src];
-    grafo->adjLists[src] = novoNo;
-    novoNo = criarNo(src);
-    novoNo->prox = grafo->adjLists[dest];
-    grafo->adjLists[dest] = novoNo;
+    No *novoNo = criarNo(dest - 1);
+    novoNo->prox = grafo->adjLists[src - 1];
+    grafo->adjLists[src - 1] = novoNo;
+
+    novoNo = criarNo(src - 1);
+    novoNo->prox = grafo->adjLists[dest - 1];
+    grafo->adjLists[dest - 1] = novoNo;
 }
-// lendo grafo do arquivo
+// lendo grafo do arfilauivo
 void lerDoArquivo(const char *filename, Grafo **grafo)
 {
     FILE *file = fopen(filename, "r");
     if (file == NULL)
     {
-        perror("Erro ao abrir o arquivo");
+        perror("Erro ao abrir o arfilauivo");
         exit(EXIT_FAILURE);
     }
 
@@ -141,7 +142,7 @@ void lerDoArquivo(const char *filename, Grafo **grafo)
     int src, dest;
     while (fscanf(file, "%d %d", &src, &dest) != EOF)
     {
-        adicionarAresta(*grafo, src - 1, dest - 1);
+        adicionarAresta(*grafo, src, dest);
     }
 
     fclose(file);
@@ -151,12 +152,12 @@ void printgrafo(Grafo *grafo)
 {
     for (int v = 0; v < grafo->numVertices; v++)
     {
-        No *temp = grafo->adjLists[v];
+        No *aux = grafo->adjLists[v];
         printf("\n Lista de adjacencia do vertice %d\n head ", v + 1);
-        while (temp)
+        while (aux)
         {
-            printf("-> %d", temp->vertex + 1);
-            temp = temp->prox;
+            printf("-> %d", aux->vertex + 1);
+            aux = aux->prox;
         }
         printf("\n");
     }
@@ -164,24 +165,50 @@ void printgrafo(Grafo *grafo)
 // Imprimir o grafo como Matriz de Adjacências
 void imprimirMatriz(Grafo *grafo)
 {
-    // Inicializando a matriz de adjacências
-    int **matrizAdj = (int **)malloc(grafo->numVertices * sizeof(int *)); // alocando matriz
-    for (int i = 0; i < grafo->numVertices; i++)
+    // Verificações de segurança
+    if (grafo == NULL || grafo->numVertices <= 0 || grafo->adjLists == NULL)
     {
-        matrizAdj[i] = (int *)calloc(grafo->numVertices, sizeof(int)); // alocando vertices
+        printf("Grafo inválido\n");
+        return;
     }
 
-    for (int i = 0; i < grafo->numVertices; i++) // preenchendo as martrizes de adjacencia
+    // Alocação da matriz de adjacências
+    int **matrizAdj = (int **)malloc(grafo->numVertices * sizeof(int *));
+    if (matrizAdj == NULL)
+    {
+        perror("Erro ao alocar matriz de adjacências");
+        return;
+    }
+
+    for (int i = 0; i < grafo->numVertices; i++)
+    {
+        matrizAdj[i] = (int *)calloc(grafo->numVertices, sizeof(int));
+        if (matrizAdj[i] == NULL)
+        {
+            perror("Erro ao alocar vetor da matriz de adjacências");
+            // Liberar memória alocada até agora
+            for (int j = 0; j < i; j++)
+            {
+                free(matrizAdj[j]);
+            }
+            free(matrizAdj);
+            return;
+        }
+    }
+
+    // Preenchimento da matriz de adjacências
+    for (int i = 0; i < grafo->numVertices; i++)
     {
         No *aux = grafo->adjLists[i];
-        while (aux)
+        while (aux != NULL)
         {
             matrizAdj[i][aux->vertex] = 1;
             aux = aux->prox;
         }
     }
-    // Imprimindo a Matriz de Adjacências
-    printf("Matriz de Adjacencias: \n");
+
+    // Impressão da Matriz de Adjacências
+    printf("Matriz de Adjacências:\n");
     for (int i = 0; i < grafo->numVertices; i++)
     {
         for (int j = 0; j < grafo->numVertices; j++)
@@ -190,7 +217,8 @@ void imprimirMatriz(Grafo *grafo)
         }
         printf("\n");
     }
-    // liberando matriz
+
+    // Liberação da memória alocada para a matriz de adjacências
     for (int i = 0; i < grafo->numVertices; i++)
     {
         free(matrizAdj[i]);
@@ -201,17 +229,17 @@ void imprimirMatriz(Grafo *grafo)
 // grau maximo
 int grauMaximo(Grafo *grafo)
 {
-    int grauMax = -1;                            // numero pequeno
+    int grauMax = -1;                            // numero pefilaueno
     for (int i = 0; i < grafo->numVertices; i++) // for para percorrer todas as vertices do grafo
     {
         int grauAtual = 0; // soma do vértice da vez
         No *aux = grafo->adjLists[i];
-        while (aux) // for para percorrer a lista de arestas de cada vertice, percorre enquanto houver na lista de adj
+        while (aux) // for para percorrer a lista de arestas de cada vertice, percorre enfilauanto houver na lista de adj
         {
             grauAtual++;     // somando as vértices
             aux = aux->prox; // andando para o próximo vértice da lista de adjacencia
         }
-        if (grauAtual > grauMax) // comparação, se a soma do vértice for maior que o grauMax, então agora ele é o grauMax.
+        if (grauAtual > grauMax) // comparação, se a soma do vértice for maior filaue o grauMax, então agora ele é o grauMax.
             grauMax = grauAtual;
         // retorna todo o loop;
     }
@@ -240,7 +268,7 @@ int numVertices(Grafo *grafo)
     return grafo->numVertices;
 }
 
-// função para comparar inteiros usada na ordenação q sort
+// função para comparar inteiros usada na ordenação fila sort
 int comparar(const void *a, const void *b)
 {
     return (*(int *)a - *(int *)b); // retornando a -b
@@ -257,12 +285,12 @@ float medianaDoGrau(Grafo *grafo)
         No *aux = grafo->adjLists[i];
         while (aux) // percorrendo as arestas dos vertices
         {
-            somaVertice++; // iterando a quantidade de cada vertice da aresta
+            somaVertice++; // iterando a filauantidade de cada vertice da aresta
             aux = aux->prox;
         }
         grausArray[i] = somaVertice; // colocando o grau do vértice do array;
     }
-    qsort(grausArray, grafo->numVertices, sizeof(int), comparar); // ordenando o array com q sort
+    qsort(grausArray, grafo->numVertices, sizeof(int), comparar); // ordenando o array com fila sort
     printf("Testando se array esta ordenado: \n");                // teste, apagar depois;
     for (int i = 0; i < num; i++)
     {
@@ -305,12 +333,12 @@ int grauMinimo(Grafo *grafo)
     {
         int grauAtual = 0; // soma do grau do vértice da vez
         No *aux = grafo->adjLists[i];
-        while (aux) // for para percorrer a lista de arestas de cada vertice, percorre enquanto houver na lista de adj
+        while (aux) // for para percorrer a lista de arestas de cada vertice, percorre enfilauanto houver na lista de adj
         {
             grauAtual++;     // iterando
             aux = aux->prox; // andando para o próximo vértice da lista de adjacencia
         }
-        if (grauAtual < grauMin) // comparação, se a soma do numero de vértices for menor que o grauMin, então agora ele é o grauMin.
+        if (grauAtual < grauMin) // comparação, se a soma do numero de vértices for menor filaue o grauMin, então agora ele é o grauMin.
             grauMin = grauAtual;
         // retorna todo o loop;
     }
@@ -331,11 +359,11 @@ void resetarVisitados(Grafo *grafo)
 }
 void buscaEmProfundidade(Grafo *grafo, int verticeInicial)
 {
-    No *lista = grafo->adjLists[verticeInicial];
+    No *lista = grafo->adjLists[verticeInicial - 1];
     No *aux = lista;
 
-    grafo->visitado[verticeInicial] = 1; // Marcando como visitado
-    printf("Visitado %d\n", verticeInicial + 1);
+    grafo->visitado[verticeInicial - 1] = 1; // Marcando como visitado
+    printf("Visitado %d\n", verticeInicial);
 
     while (aux != NULL)
     {
@@ -343,7 +371,7 @@ void buscaEmProfundidade(Grafo *grafo, int verticeInicial)
 
         if (grafo->visitado[verticeAdjacente] == 0)
         {
-            buscaEmProfundidade(grafo, verticeAdjacente);
+            buscaEmProfundidade(grafo, verticeAdjacente + 1);
         }
         aux = aux->prox;
     }
@@ -356,11 +384,11 @@ void liberarGrafo(Grafo *grafo)
         for (int i = 0; i < grafo->numVertices; i++)
         {
             No *atual = grafo->adjLists[i];
-            while (atual)
+            while (atual != NULL)
             {
                 No *aux = atual;
+                atual = atual->prox;
                 free(aux);
-                aux = aux->prox;
             }
         }
     }
@@ -373,8 +401,8 @@ void buscaPorLargura(Grafo *grafo, int verticeInicial)
 {
     Fila *fila = criarFila(); // Função para criar a fila
 
-    grafo->visitado[verticeInicial] = 1;
-    enqueue(fila, verticeInicial);
+    grafo->visitado[verticeInicial - 1] = 1;
+    enqueue(fila, verticeInicial - 1);
     while (!filaVazia(fila))
     {
         int verticeAtual = dequeue(fila);
@@ -396,101 +424,68 @@ void buscaPorLargura(Grafo *grafo, int verticeInicial)
     liberarfila(fila); // Função para liberar a fila
 }
 
-// Implementação da busca por largura
-
-// DISTANCIAS E DIAMETRO
-// função para calulcar a distancia entre dois vertices do grafo
-// Função para calcular o diâmetro do grafo
-// int calcularDiametro(struct Graph* graph) {
-//   int diametro = 0;
-
-//   // Para cada vértice do grafo, calcula a distância máxima para todos os outros vértices
-//   for (int i = 0; i < graph->numVertices; i++) {
-//     // Array para armazenar as distâncias mínimas a partir do vértice i
-//     int distancias[graph->numVertices];
-//     for (int j = 0; j < graph->numVertices; j++) {
-//       distancias[j] = -1; // -1 indica que o vértice não foi alcançado
-//     }
-
-//     // BFS a partir do vértice i para calcular as distâncias mínimas
-//     struct queue* q = createQueue();
-//     distancias[i] = 0; // A distância do vértice para si mesmo é zero
-//     enqueue(q, i);
-
-//     while (!isEmpty(q)) {
-//       int currentVertex = dequeue(q);
-//       struct node* temp = graph->adjLists[currentVertex];
-
-//       while (temp) {
-//         int adjVertex = temp->vertex;
-
-//         if (distancias[adjVertex] == -1) { // Verifica se o vértice adjacente não foi visitado
-//           distancias[adjVertex] = distancias[currentVertex] + 1;
-//           enqueue(q, adjVertex);
-//         }
-
-//         temp = temp->next;
-//       }
-//     }
-
-//     // Encontra a maior distância calculada para o vértice i
-//     for (int j = 0; j < graph->numVertices; j++) {
-//       if (distancias[j] > diametro) {
-//         diametro = distancias[j];
-//       }
-//     }
-//   }
-
-//   return diametro;
-// }
-
 // Função para calcular a distância entre dois vértices específicos
-int calcularDistancia(Grafo *grafo, int startVertex, int targetVertex)
+int calcularDistancia(Grafo *grafo, int verticeInicial, int verticeFinal)
 {
-    // Array para armazenar as distâncias mínimas a partir do vértice startVertex
-    int num = numVertices(grafo);
-    int distancias[5];
-    for (int j = 0; j < grafo->numVertices; j++)
+    int origem = verticeInicial - 1;
+    int destino = verticeFinal - 1;
+    if (origem < 0 || origem >= grafo->numVertices || destino < 0 || destino >= grafo->numVertices)
     {
-        distancias[j] = -1; // -1 indica que o vértice não foi alcançado
+        return -1;
     }
-
-    // BFS a partir do vértice startVertex para calcular as distâncias mínimas
-    struct Fila *q = criarFila();
-    distancias[startVertex] = 0; // A distância de startVertex para si mesmo é zero
-    enqueue(q, startVertex);
-
-    while (!filaVazia(q))
+    Fila *fila = criarFila();
+    int *distancia = (int *)malloc(grafo->numVertices * sizeof(int));
+    for (int i = 0; i < grafo->numVertices; i++)
     {
-        int currentVertex = dequeue(q);
-        struct No *temp = grafo->adjLists[currentVertex];
+        distancia[i] = -1; // -1 indica filaue o vértice não foi alcançado
+    }
+    grafo->visitado[origem] = 1;
+    distancia[origem] = 0; // A distância de origem para si mesmo é zero
+    enqueue(fila, origem);
 
-        while (temp)
+    while (!filaVazia(fila))
+    {
+        int verticeAtual = dequeue(fila);
+        No *aux = grafo->adjLists[verticeAtual];
+
+        while (aux)
         {
-            int adjVertex = temp->vertex;
+            int adjVertex = aux->vertex;
 
-            if (distancias[adjVertex] == -1)
+            if (distancia[adjVertex] == -1)
             { // Verifica se o vértice adjacente não foi visitado
-                distancias[adjVertex] = distancias[currentVertex] + 1;
-                enqueue(q, adjVertex);
+                grafo->visitado[adjVertex] = 1;
+                distancia[adjVertex] = distancia[verticeAtual] + 1;
+                enqueue(fila, adjVertex);
             }
-
-            // Se chegarmos ao vértice targetVertex, podemos retornar a distância
-            if (adjVertex == targetVertex)
-            {
-                return distancias[targetVertex];
-            }
-
-            temp = temp->prox;
+            aux = aux->prox;
         }
     }
 
-    // Se o targetVertex não foi alcançado, retorna -1 indicando que não há caminho
-    return -1;
+    // Se o destino não foi alcançado, retorna -1 indicando filaue não há caminho
+    liberarfila(fila);
+    resetarVisitados(grafo);
+    return distancia[destino];
 }
+
+int calcularDiamentro(Grafo *grafo)
+{
+    int resultado = 0;
+    for (int i = 0; i < grafo->numVertices; i++)
+    {
+        for (int j = 0; j < grafo->numVertices; j++)
+        {
+            int distancia = calcularDistancia(grafo, i, j);
+            if (distancia > resultado)
+                resultado = distancia;
+        }
+    }
+    return resultado;
+}
+
 int main()
 {
-    const char *filename = "grafo_2.txt"; // Nome do arquivo de entrada
+    const char *filename = "grafo_2.txt"; // Nome do arfilauivo de entrada
     Grafo *grafo = NULL;
 
     lerDoArquivo(filename, &grafo);
@@ -508,10 +503,13 @@ int main()
     printf("Busca em profundidade: \n");
     buscaEmProfundidade(grafo, 3);
     printf("\nGrafo em matriz:\n");
-    imprimirMatriz(grafo);
+    printf("Dsitancia entre duas vertices no grafo: %d\n", calcularDistancia(grafo, 1, 6));
+    printf("Diametro do grafo: %d", calcularDiamentro(grafo));
+
+    // imprimirMatriz(grafo);
 
     liberarGrafo(grafo);
 
-    // Liberar memória (não mostrado aqui)
+    // Liberar memória (não mostrado afilaui)
     return 0;
 }
